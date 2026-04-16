@@ -1,0 +1,116 @@
+const express = require('express');
+const router = express.Router();
+const App = require('../models/App');
+const pm2Service = require('../services/pm2Service');
+const deployService = require('../services/deployService');
+const cloudflareService = require('../services/cloudflareService');
+
+// Get all apps
+router.get('/apps', async (req, res) => {
+  try {
+    const apps = await App.find().sort({ createdAt: -1 });
+    res.json(apps);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Create and deploy app
+router.post('/create-app', async (req, res) => {
+  const { name, repoUrl, subdomain } = req.body;
+  
+  try {
+    // Find next available port (starting from 5001)
+    const lastApp = await App.findOne().sort({ port: -1 });
+    const port = lastApp ? lastApp.port + 1 : 5001;
+
+    const newApp = new App({
+      name,
+      repoUrl,
+      subdomain,
+      port,
+      status: 'deploying'
+    });
+    
+    await newApp.save();
+    
+    // Logic for background deploy (not blocking response)
+    deployAppTask(newApp);
+
+    res.json(newApp);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const deployAppTask = async (app) => {
+  try {
+    const entryPoint = await deployService.deploy(app);
+    await pm2Service.startApp(app.name, entryPoint, { PORT: app.port, ...app.env });
+    
+    app.status = 'running';
+    app.lastDeployed = new Date();
+    await app.save();
+
+    // Update Cloudflare
+    await cloudflareService.routeDns(app.subdomain);
+    const allApps = await App.find();
+    await cloudflareService.updateConfig(allApps);
+    await cloudflareService.restartTunnel();
+
+  } catch (err) {
+    console.error('Deployment failed:', err);
+    app.status = 'error';
+    app.errorLogs = err.message;
+    await app.save();
+  }
+};
+
+// Control routes
+router.post('/start/:id', async (req, res) => {
+  try {
+    const app = await App.findById(req.params.id);
+    await pm2Service.restartApp(app.name); // Restart if stopped, starts it
+    app.status = 'running';
+    await app.save();
+    res.json({ message: 'App started' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/stop/:id', async (req, res) => {
+  try {
+    const app = await App.findById(req.params.id);
+    await pm2Service.stopApp(app.name);
+    app.status = 'stopped';
+    await app.save();
+    res.json({ message: 'App stopped' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.delete('/app/:id', async (req, res) => {
+  try {
+    const app = await App.findById(req.params.id);
+    await pm2Service.deleteApp(app.name);
+    await App.findByIdAndDelete(req.params.id);
+    res.json({ message: 'App deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Logs
+router.get('/logs/:id', async (req, res) => {
+  try {
+    const app = await App.findById(req.params.id);
+    const logs = await pm2Service.getLogs(app.name);
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+module.exports = router;
