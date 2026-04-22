@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Terminal, ArrowLeft, Power, RotateCcw, Trash2, Github, Globe, Cpu } from 'lucide-react';
+import { Terminal, ArrowLeft, Power, RotateCcw, Trash2, Globe, Cpu } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const API_BASE = 'http://localhost:5000/api/admin';
+const API_BASE = 'https://panel-api.justlavish.tech/api/admin';
 
 function AppDetails() {
   const { id } = useParams();
@@ -74,7 +74,7 @@ function AppDetails() {
           <div className="card">
             <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem' }}>Application Info</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <InfoItem icon={<Github size={16} />} label="Repository" value={app.name} />
+              <InfoItem icon={<Globe  size={26} />} label="Repository" value={app.name} />
               <InfoItem icon={<Globe size={16} />} label="Subdomain" value={app.subdomain} />
               <InfoItem icon={<Cpu size={16} />} label="Port" value={app.port} />
               <InfoItem icon={<Terminal size={16} />} label="Status" value={app.status} isStatus />

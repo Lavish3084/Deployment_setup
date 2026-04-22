@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Github, Globe, Box, Save, ArrowLeft, Loader2 } from 'lucide-react';
+import {  Globe, Box, Save, ArrowLeft, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const API_BASE = 'http://localhost:5000/api/admin';
+const API_BASE = 'https://panel-api.justlavish.tech/api/admin';
 
 function CreateApp() {
   const navigate = useNavigate();
@@ -61,7 +61,7 @@ function CreateApp() {
           <div className="form-group">
             <label style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>GitHub Repo URL</label>
             <div style={{ position: 'relative' }}>
-              <Github size={18} style={{ position: 'absolute', left: '1rem', top: '1rem', color: 'var(--text-secondary)' }} />
+              <Globe  size={18} style={{ position: 'absolute', left: '1rem', top: '1rem', color: 'var(--text-secondary)' }} />
               <input 
                 type="url" 
                 placeholder="https://github.com/user/repo"

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, NavLink } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, Terminal, Settings, Activity, Github, ExternalLink, Power, RotateCcw, Trash2 } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Terminal, Settings, Activity, ExternalLink, Power, RotateCcw, Trash2 } from 'lucide-react';
 import Dashboard from './pages/Dashboard';
 import CreateApp from './pages/CreateApp';
 import AppDetails from './pages/AppDetails';

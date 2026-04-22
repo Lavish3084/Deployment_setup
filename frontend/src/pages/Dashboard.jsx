@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { ExternalLink, Terminal, Power, MoreVertical, RefreshCw, Cpu, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const API_BASE = 'http://localhost:5000/api/admin';
+const API_BASE = 'https://panel-api.justlavish.tech/api/admin';
 
 function Dashboard() {
   const [apps, setApps] = useState([]);
