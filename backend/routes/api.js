@@ -51,7 +51,10 @@ const deployAppTask = async (app) => {
     app.status = 'deploying';
     await app.save();
 
-    const appPath = await deployService.deploy(app);
+    const { appPath, logs } = await deployService.deploy(app);
+    app.deploymentLogs = logs;
+    await app.save();
+
     await pm2Service.startApp(app, appPath, { ...app.env });
     
     app.status = 'running';

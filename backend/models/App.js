@@ -16,7 +16,8 @@ const appSchema = new mongoose.Schema({
   env: { type: Map, of: String, default: {} },
   lastDeployed: { type: Date },
   webhookSecret: { type: String },
-  errorLogs: { type: String }
+  errorLogs: { type: String },
+  deploymentLogs: { type: String }
 }, { timestamps: true });
 
 module.exports = mongoose.model('App', appSchema);

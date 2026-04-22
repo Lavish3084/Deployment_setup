@@ -150,23 +150,28 @@ function AppDetails() {
           }}>
             <div style={{ color: 'var(--primary-color)', marginBottom: '1rem' }}>[SYSTEM] Tracking logs for {app.name}...</div>
             
+            {(app.deploymentLogs || app.errorLogs) && (
+              <div style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.02)', borderRadius: '0.75rem', borderLeft: `3px solid ${app.status === 'error' ? 'var(--error)' : 'var(--primary-color)'}` }}>
+                <div style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '0.5rem', fontWeight: 'bold' }}>BUILD & DEPLOYMENT LOGS</div>
+                <pre style={{ whiteSpace: 'pre-wrap', margin: 0, color: '#94a3b8', lineHeight: '1.6' }}>
+                  {app.deploymentLogs || app.errorLogs}
+                </pre>
+              </div>
+            )}
+
             <div style={{ marginBottom: '1.5rem', padding: '0.75rem', background: 'rgba(255,255,255,0.02)', borderRadius: '0.5rem' }}>
-              <div style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '0.25rem' }}>LOG STREAM PATHS</div>
+              <div style={{ color: '#64748b', fontSize: '0.75rem', marginBottom: '0.25rem' }}>RUNTIME LOG PATHS (PM2)</div>
               <div style={{ color: '#94a3b8' }}>OUT: {logs.logPath || 'N/A'}</div>
               <div style={{ color: '#94a3b8' }}>ERR: {logs.errorPath || 'N/A'}</div>
             </div>
 
             <div style={{ lineHeight: '1.8' }}>
-              {app.errorLogs ? (
-                <div style={{ color: 'var(--error)', padding: '1rem', background: 'rgba(239, 68, 68, 0.05)', borderRadius: '0.5rem', borderLeft: '3px solid var(--error)' }}>
-                  [DEPLOYMENT ERROR] {app.errorLogs}
-                </div>
-              ) : (
+              {app.status === 'running' && (
                 <>
                   <div style={{ color: '#10b981' }}>[STDOUT] Application instance healthy</div>
                   <div style={{ color: '#10b981' }}>[STDOUT] Listening on port {app.port}</div>
                   <div style={{ color: '#6366f1' }}>[PM2] Process online (id: 0)</div>
-                  {app.status === 'running' && <div className="blink" style={{ color: 'var(--primary-color)' }}>_</div>}
+                  <div className="blink" style={{ color: 'var(--primary-color)' }}>_</div>
                 </>
               )}
             </div>
