@@ -10,15 +10,42 @@ const connect = () => new Promise((resolve, reject) => {
 const startApp = async (app, appPath, env = {}) => {
   await connect();
   
-  const fullCommand = app.startCommand || 'npm start';
-  const parts = fullCommand.split(' ');
+  let startCommand = app.startCommand;
+  const fs = require('fs');
+  const path = require('path');
+
+  // Intelligent fallback if no start command provided
+  if (!startCommand || startCommand === 'npm start') {
+    if (fs.existsSync(path.join(appPath, 'package.json'))) {
+      const pkg = JSON.parse(fs.readFileSync(path.join(appPath, 'package.json'), 'utf8'));
+      
+      if (pkg.scripts && pkg.scripts.start) {
+        startCommand = 'npm start';
+      } else if (pkg.main) {
+        startCommand = `node ${pkg.main}`;
+      } else if (fs.existsSync(path.join(appPath, 'index.js'))) {
+        startCommand = 'node index.js';
+      } else if (fs.existsSync(path.join(appPath, 'server.js'))) {
+        startCommand = 'node server.js';
+      }
+    } else if (fs.existsSync(path.join(appPath, 'index.js'))) {
+      startCommand = 'node index.js';
+    }
+  }
+
+  // Final fallback
+  if (!startCommand) startCommand = 'node index.js';
+
+  console.log(`🚀 [${app.name}] Starting app with command: ${startCommand}`);
+
+  const parts = startCommand.split(' ');
   const cmd = parts[0];
   const args = parts.slice(1);
 
   let options = {
     name: app.name,
     cwd: appPath,
-    env: { ...env, PORT: app.port }, // Ensure PORT is passed
+    env: { ...env, PORT: app.port },
     autorestart: true,
     max_memory_restart: '300M'
   };
@@ -31,7 +58,6 @@ const startApp = async (app, appPath, env = {}) => {
     options.args = args.slice(1);
     options.interpreter = 'node';
   } else {
-    // For other commands (python, sh, etc.), use the command as script and args as args
     options.script = cmd;
     options.args = args;
   }
@@ -42,6 +68,7 @@ const startApp = async (app, appPath, env = {}) => {
         console.error(`PM2 start failed for ${app.name}:`, err);
         reject(err);
       } else {
+        console.log(`✅ [${app.name}] Process started via PM2`);
         resolve(apps);
       }
     });
