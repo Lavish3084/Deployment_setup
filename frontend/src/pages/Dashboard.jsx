@@ -20,9 +20,10 @@ function Dashboard() {
     try {
       const res = await axios.get(`${API_BASE}/apps`);
       setApps(res.data);
-      setLoading(false);
     } catch (err) {
       console.error('Fetch apps failed:', err);
+    } finally {
+      setLoading(false);
     }
   };
 

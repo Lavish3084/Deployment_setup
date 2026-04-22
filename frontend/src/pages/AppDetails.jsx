@@ -27,10 +27,10 @@ function AppDetails() {
       
       const logRes = await axios.get(`${API_BASE}/logs/${id}`);
       setLogs(logRes.data);
-      
-      setLoading(false);
     } catch (err) {
       console.error('Fetch failed:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
