@@ -17,7 +17,7 @@ router.get('/apps', async (req, res) => {
 
 // Create and deploy app
 router.post('/create-app', async (req, res) => {
-  const { name, repoUrl, subdomain } = req.body;
+  const { name, repoUrl, subdomain, branch, buildCommand, startCommand } = req.body;
   
   try {
     // Find next available port (starting from 5001)
@@ -29,6 +29,9 @@ router.post('/create-app', async (req, res) => {
       repoUrl,
       subdomain,
       port,
+      branch: branch || 'main',
+      buildCommand: buildCommand || 'npm install',
+      startCommand: startCommand || 'npm start',
       status: 'deploying'
     });
     
@@ -45,18 +48,26 @@ router.post('/create-app', async (req, res) => {
 
 const deployAppTask = async (app) => {
   try {
-    const entryPoint = await deployService.deploy(app);
-    await pm2Service.startApp(app.name, entryPoint, { PORT: app.port, ...app.env });
+    app.status = 'deploying';
+    await app.save();
+
+    const appPath = await deployService.deploy(app);
+    await pm2Service.startApp(app, appPath, { ...app.env });
     
     app.status = 'running';
     app.lastDeployed = new Date();
+    app.errorLogs = ''; // Clear previous errors
     await app.save();
 
     // Update Cloudflare
-    await cloudflareService.routeDns(app.subdomain);
-    const allApps = await App.find();
-    await cloudflareService.updateConfig(allApps);
-    await cloudflareService.restartTunnel();
+    try {
+      await cloudflareService.routeDns(app.subdomain);
+      const allApps = await App.find();
+      await cloudflareService.updateConfig(allApps);
+      await cloudflareService.restartTunnel();
+    } catch (cfErr) {
+      console.warn('Cloudflare update failed (non-critical):', cfErr);
+    }
 
   } catch (err) {
     console.error('Deployment failed:', err);
@@ -65,6 +76,19 @@ const deployAppTask = async (app) => {
     await app.save();
   }
 };
+
+// Redeploy route
+router.post('/redeploy/:id', async (req, res) => {
+  try {
+    const app = await App.findById(req.params.id);
+    if (!app) return res.status(404).json({ error: 'App not found' });
+
+    deployAppTask(app);
+    res.json({ message: 'Redeployment started', app });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Control routes
 router.post('/start/:id', async (req, res) => {

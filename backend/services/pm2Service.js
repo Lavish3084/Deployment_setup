@@ -7,17 +7,43 @@ const connect = () => new Promise((resolve, reject) => {
   });
 });
 
-const startApp = async (appName, scriptPath, env = {}) => {
+const startApp = async (app, appPath, env = {}) => {
   await connect();
+  
+  const fullCommand = app.startCommand || 'npm start';
+  const parts = fullCommand.split(' ');
+  const cmd = parts[0];
+  const args = parts.slice(1);
+
+  let options = {
+    name: app.name,
+    cwd: appPath,
+    env: { ...env, PORT: app.port }, // Ensure PORT is passed
+    autorestart: true,
+    max_memory_restart: '300M'
+  };
+
+  if (cmd === 'npm') {
+    options.script = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+    options.args = args;
+  } else if (cmd === 'node') {
+    options.script = args[0];
+    options.args = args.slice(1);
+    options.interpreter = 'node';
+  } else {
+    // For other commands (python, sh, etc.), use the command as script and args as args
+    options.script = cmd;
+    options.args = args;
+  }
+
   return new Promise((resolve, reject) => {
-    pm2.start({
-      name: appName,
-      script: scriptPath,
-      env: env
-    }, (err, apps) => {
-      // pm2.disconnect();
-      if (err) reject(err);
-      else resolve(apps);
+    pm2.start(options, (err, apps) => {
+      if (err) {
+        console.error(`PM2 start failed for ${app.name}:`, err);
+        reject(err);
+      } else {
+        resolve(apps);
+      }
     });
   });
 };

@@ -17,6 +17,7 @@ app.use(bodyParser.json());
 // Routes
 app.use('/api/admin', apiRoutes);
 app.use('/api/webhook', webhookRoutes);
+app.use('/api', require('./routes/selfUpdate'));
 
 // Health check
 app.get('/health', (req, res) => {

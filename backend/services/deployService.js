@@ -15,47 +15,46 @@ const deploy = async (app) => {
   }
 
   const appPath = path.join(APPS_DIR, app.name);
+  const targetBranch = app.branch || 'main';
 
-  console.log("🚀 Deploying:", app.name);
-  console.log("📦 Repo:", app.repoUrl);
+  console.log(`🚀 [${app.name}] Deploying...`);
+  console.log(`📦 Repo: ${app.repoUrl} (branch: ${targetBranch})`);
 
   // -------------------------------
   // CLONE OR PULL
   // -------------------------------
   if (fs.existsSync(appPath)) {
-    console.log("🔄 Pulling latest changes...");
-    shell.cd(appPath);
+    console.log(`🔄 [${app.name}] Directory exists, updating repository...`);
+    
+    // Ensure we are on the right branch and pull
+    const gitFetch = shell.exec('git fetch', { cwd: appPath });
+    if (gitFetch.code !== 0) throw new Error(`Git fetch failed: ${gitFetch.stderr}`);
 
-    const pullResult = shell.exec('git pull');
+    const gitCheckout = shell.exec(`git checkout ${targetBranch}`, { cwd: appPath });
+    if (gitCheckout.code !== 0) throw new Error(`Git checkout ${targetBranch} failed: ${gitCheckout.stderr}`);
 
-    if (pullResult.code !== 0) {
-      throw new Error('Git pull failed: ' + pullResult.stderr);
-    }
+    const gitPull = shell.exec('git pull', { cwd: appPath });
+    if (gitPull.code !== 0) throw new Error(`Git pull failed: ${gitPull.stderr}`);
 
   } else {
-    console.log("📥 Cloning repository...");
-    shell.cd(APPS_DIR);
-
-    const cloneCmd = app.branch
-      ? `git clone -b ${app.branch} "${app.repoUrl}" "${app.name}"`
-      : `git clone "${app.repoUrl}" "${app.name}"`;
-
-    const cloneResult = shell.exec(cloneCmd);
+    console.log(`📥 [${app.name}] Cloning repository...`);
+    
+    const cloneCmd = `git clone -b ${targetBranch} "${app.repoUrl}" "${app.name}"`;
+    const cloneResult = shell.exec(cloneCmd, { cwd: APPS_DIR });
 
     if (cloneResult.code !== 0) {
-      throw new Error('Git clone failed: ' + cloneResult.stderr);
+      throw new Error(`Git clone failed: ${cloneResult.stderr}`);
     }
-
-    shell.cd(app.name);
   }
 
   // -------------------------------
   // ENV FILE
   // -------------------------------
-  if (app.env && Object.keys(app.env).length > 0) {
-    console.log("⚙️ Writing .env file...");
+  const envVars = app.env instanceof Map ? Object.fromEntries(app.env) : (app.env || {});
+  if (Object.keys(envVars).length > 0) {
+    console.log(`⚙️ [${app.name}] Writing .env file...`);
 
-    const envContent = Object.entries(app.env)
+    const envContent = Object.entries(envVars)
       .map(([k, v]) => `${k}=${v}`)
       .join('\n');
 
@@ -63,46 +62,19 @@ const deploy = async (app) => {
   }
 
   // -------------------------------
-  // INSTALL DEPENDENCIES
+  // INSTALL & BUILD
   // -------------------------------
-  console.log("📦 Installing dependencies...");
-  const installResult = shell.exec('npm install');
+  console.log(`📦 [${app.name}] Running build command: ${app.buildCommand || 'npm install'}`);
+  const buildCmd = app.buildCommand || 'npm install';
+  const buildResult = shell.exec(buildCmd, { cwd: appPath });
 
-  if (installResult.code !== 0) {
-    throw new Error('NPM install failed: ' + installResult.stderr);
+  if (buildResult.code !== 0) {
+    throw new Error(`Build command failed: ${buildResult.stderr}`);
   }
 
-  // -------------------------------
-  // BUILD (if frontend)
-  // -------------------------------
-  if (fs.existsSync(path.join(appPath, 'package.json'))) {
-    const pkg = JSON.parse(fs.readFileSync(path.join(appPath, 'package.json')));
+  console.log(`✅ [${app.name}] Deployment Ready`);
 
-    if (pkg.scripts && pkg.scripts.build) {
-      console.log("🏗️ Running build...");
-      const buildResult = shell.exec('npm run build');
-
-      if (buildResult.code !== 0) {
-        throw new Error('Build failed: ' + buildResult.stderr);
-      }
-    }
-  }
-
-  // -------------------------------
-  // ENTRY POINT DETECTION
-  // -------------------------------
-  let entryPoint = 'index.js';
-
-  if (fs.existsSync(path.join(appPath, 'package.json'))) {
-    const pkg = JSON.parse(fs.readFileSync(path.join(appPath, 'package.json')));
-    entryPoint = pkg.main || 'index.js';
-  }
-
-  const fullEntry = path.join(appPath, entryPoint);
-
-  console.log("✅ Deployment Ready:", fullEntry);
-
-  return fullEntry;
+  return appPath;
 };
 
 module.exports = {
