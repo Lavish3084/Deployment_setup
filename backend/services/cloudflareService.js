@@ -13,36 +13,58 @@ const updateConfig = async (apps) => {
     return;
   }
 
-  const baseConfig = {
-    tunnel: TUNNEL_ID,
-    'credentials-file': `/root/.cloudflared/${TUNNEL_ID}.json`,
-    ingress: []
-  };
+  let currentConfig = { ingress: [] };
+  
+  // Try to load existing config to preserve static routes
+  if (fs.existsSync(CONFIG_PATH)) {
+    try {
+      const fileContent = fs.readFileSync(CONFIG_PATH, 'utf8');
+      currentConfig = yaml.load(fileContent) || { ingress: [] };
+    } catch (err) {
+      console.warn('Could not read existing Cloudflare config, starting fresh');
+    }
+  }
 
-  // Add ingress rules for each app
+  // Define hostnames managed by this platform (dynamic apps)
+  const managedHostnames = new Set(apps.map(app => app.subdomain));
+
+  // 1. Keep static routes (routes not in the database and not the catch-all 404)
+  const staticRoutes = (currentConfig.ingress || []).filter(item => {
+    // Keep it if it has a hostname and it's NOT one of our managed apps
+    return item.hostname && !managedHostnames.has(item.hostname);
+  });
+
+  // 2. Build new ingress list
+  const newIngress = [...staticRoutes];
+
+  // 3. Add dynamic apps
   apps.forEach(app => {
     if (app.status === 'running') {
-      baseConfig.ingress.push({
+      newIngress.push({
         hostname: app.subdomain,
         service: `http://localhost:${app.port}`
       });
     }
   });
 
-  // Add catch-all 404
-  baseConfig.ingress.push({
+  // 4. Add catch-all 404 at the end
+  newIngress.push({
     service: 'http_status:404'
   });
+
+  const baseConfig = {
+    tunnel: TUNNEL_ID,
+    'credentials-file': `/root/.cloudflared/${TUNNEL_ID}.json`,
+    ingress: newIngress
+  };
 
   const yamlContent = yaml.dump(baseConfig);
   
   try {
-    // In production, this might need sudo or specific permissions
-    // We'll write to a temp file first if needed, but for now direct write
     fs.writeFileSync(CONFIG_PATH, yamlContent);
-    console.log('Cloudflare config updated');
+    console.log('✅ Cloudflare config updated and preserved static routes');
   } catch (err) {
-    console.error('Failed to write Cloudflare config:', err);
+    console.error('❌ Failed to write Cloudflare config:', err);
     throw err;
   }
 };
@@ -50,20 +72,24 @@ const updateConfig = async (apps) => {
 const routeDns = async (subdomain) => {
   if (!TUNNEL_ID) return;
   
+  console.log(`📡 Routing DNS for ${subdomain}...`);
   const cmd = `cloudflared tunnel route dns ${TUNNEL_ID} ${subdomain}`;
   const result = shell.exec(cmd);
   if (result.code !== 0) {
-    console.error('Cloudflare DNS routing failed:', result.stderr);
-    // Don't throw here as the DNS might already exist
+    console.warn('⚠️ Cloudflare DNS routing (might already exist):', result.stderr);
   }
 };
 
 const restartTunnel = async () => {
-  // Usually done via systemctl or pm2 if tunnel is managed there
-  // For now, let's assume it's managed by a command like 'pm2 restart tunnel-name'
-  // Or it might be a systemd service.
+  console.log('🔄 Restarting Cloudflare Tunnel via PM2...');
+  // Ensure the tunnel is managed by PM2 as 'cloudflared'
   const restartCmd = process.env.CLOUDFLARE_RESTART_CMD || 'pm2 restart cloudflared';
-  shell.exec(restartCmd);
+  const result = shell.exec(restartCmd);
+  
+  if (result.code !== 0) {
+    console.error('❌ Failed to restart tunnel via PM2. Ensure "cloudflared" is running in PM2.');
+    // Fallback or alert user
+  }
 };
 
 module.exports = {
