@@ -225,7 +225,6 @@ function CreateApp() {
             <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
               <strong>Pro Tip:</strong> Your application will be automatically containerized and deployed. We manage SSL and DNS via Cloudflare Tunnel.
             </p>
-          </div>
 
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%', marginTop: '2rem', height: '3.5rem' }}>
             {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
