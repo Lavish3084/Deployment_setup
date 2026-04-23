@@ -15,7 +15,8 @@ function CreateApp() {
     subdomain: '',
     branch: 'main',
     buildCommand: 'npm install',
-    startCommand: 'npm start'
+    startCommand: 'npm start',
+    env: {}
   });
 
   const handleSubmit = async (e) => {
@@ -168,7 +169,59 @@ function CreateApp() {
             ))}
           </div>
 
-          <div style={{ marginTop: '2rem', padding: '1.5rem', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '1rem', border: '1px solid rgba(99, 102, 241, 0.1)' }}>
+          <div style={{ marginTop: '2rem' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <Zap size={18} color="var(--primary-color)" />
+              Environment Variables
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {Object.entries(formData.env || {}).map(([key, value], idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                  <input 
+                    type="text" 
+                    placeholder="KEY" 
+                    value={key} 
+                    onChange={(e) => {
+                      const newEnv = { ...formData.env };
+                      const val = newEnv[key];
+                      delete newEnv[key];
+                      newEnv[e.target.value] = val;
+                      setFormData({ ...formData, env: newEnv });
+                    }}
+                    style={{ flex: 1 }}
+                  />
+                  <input 
+                    type="text" 
+                    placeholder="VALUE" 
+                    value={value} 
+                    onChange={(e) => {
+                      setFormData({ ...formData, env: { ...formData.env, [key]: e.target.value } });
+                    }}
+                    style={{ flex: 2 }}
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      const newEnv = { ...formData.env };
+                      delete newEnv[key];
+                      setFormData({ ...formData, env: newEnv });
+                    }}
+                    style={{ padding: '0.5rem', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--error)', border: 'none', borderRadius: '0.5rem', cursor: 'pointer' }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <button 
+                type="button" 
+                onClick={() => setFormData({ ...formData, env: { ...formData.env, '': '' } })}
+                className="btn btn-outline"
+                style={{ width: 'fit-content', fontSize: '0.8rem', padding: '0.5rem 1rem' }}
+              >
+                + Add Variable
+              </button>
+            </div>
+          </div>
             <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
               <strong>Pro Tip:</strong> Your application will be automatically containerized and deployed. We manage SSL and DNS via Cloudflare Tunnel.
             </p>

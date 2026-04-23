@@ -12,6 +12,8 @@ function AppDetails() {
   const [app, setApp] = useState(null);
   const [logs, setLogs] = useState({ logPath: '', errorPath: '' });
   const [loading, setLoading] = useState(true);
+  const [editEnv, setEditEnv] = useState(false);
+  const [tempEnv, setTempEnv] = useState({});
 
   useEffect(() => {
     fetchApp();
@@ -24,6 +26,7 @@ function AppDetails() {
       const res = await axios.get(`${API_BASE}/apps`);
       const currentApp = res.data.find(a => a._id === id);
       setApp(currentApp);
+      setTempEnv(currentApp.env || {});
       
       const logRes = await axios.get(`${API_BASE}/logs/${id}`);
       setLogs(logRes.data);
@@ -114,15 +117,69 @@ function AppDetails() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} className="glass-card">
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <History size={20} color="var(--primary-color)" /> Environment
-            </h3>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '0.75rem', fontFamily: 'var(--font-mono, monospace)', border: '1px solid var(--border-color)' }}>
-              {Object.entries(app.env || {}).map(([k, v]) => (
-                <div key={k} style={{ marginBottom: '0.25rem' }}><span style={{ color: 'var(--primary-color)' }}>{k}</span>={v}</div>
-              ))}
-              {Object.keys(app.env || {}).length === 0 && 'No variables set'}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <History size={20} color="var(--primary-color)" /> Environment
+              </h3>
+              <button 
+                onClick={() => setEditEnv(!editEnv)} 
+                className="btn btn-outline" 
+                style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}
+              >
+                {editEnv ? 'Cancel' : 'Manage'}
+              </button>
             </div>
+
+            {editEnv ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {Object.entries(tempEnv).map(([k, v], idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input 
+                      type="text" 
+                      value={k} 
+                      onChange={(e) => {
+                        const newEnv = { ...tempEnv };
+                        const val = newEnv[k];
+                        delete newEnv[k];
+                        newEnv[e.target.value] = val;
+                        setTempEnv(newEnv);
+                      }}
+                      style={{ flex: 1, fontSize: '0.8rem', padding: '0.4rem' }}
+                    />
+                    <input 
+                      type="text" 
+                      value={v} 
+                      onChange={(e) => setTempEnv({ ...tempEnv, [k]: e.target.value })}
+                      style={{ flex: 1, fontSize: '0.8rem', padding: '0.4rem' }}
+                    />
+                    <button onClick={() => {
+                      const newEnv = { ...tempEnv };
+                      delete newEnv[k];
+                      setTempEnv(newEnv);
+                    }} style={{ color: 'var(--error)', background: 'none', border: 'none' }}>×</button>
+                  </div>
+                ))}
+                <button onClick={() => setTempEnv({ ...tempEnv, '': '' })} className="btn btn-outline" style={{ fontSize: '0.7rem' }}>+ Add</button>
+                <button 
+                  onClick={async () => {
+                    await axios.patch(`${API_BASE}/app/${id}`, { env: tempEnv });
+                    setEditEnv(false);
+                    fetchApp();
+                  }} 
+                  className="btn btn-primary" 
+                  style={{ marginTop: '0.5rem' }}
+                >
+                  Save Variables
+                </button>
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '0.75rem', fontFamily: 'var(--font-mono, monospace)', border: '1px solid var(--border-color)' }}>
+                {Object.entries(app.env || {}).map(([k, v]) => (
+                  <div key={k} style={{ marginBottom: '0.25rem' }}><span style={{ color: 'var(--primary-color)' }}>{k}</span>={v}</div>
+                ))}
+                {Object.keys(app.env || {}).length === 0 && 'No variables set'}
+              </div>
+            )}
           </motion.div>
         </div>
 

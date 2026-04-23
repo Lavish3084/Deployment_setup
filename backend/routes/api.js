@@ -38,6 +38,7 @@ router.post('/create-app', async (req, res) => {
       branch: branch || 'main',
       buildCommand: buildCommand || 'npm install',
       startCommand: startCommand || 'npm start',
+      env: req.body.env || {},
       status: 'deploying'
     });
     
@@ -143,6 +144,16 @@ router.delete('/app/:id', async (req, res) => {
 });
 
 // Logs
+// Update app settings
+router.patch('/app/:id', async (req, res) => {
+  try {
+    const app = await App.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(app);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/logs/:id', async (req, res) => {
   try {
     const app = await App.findById(req.params.id);
