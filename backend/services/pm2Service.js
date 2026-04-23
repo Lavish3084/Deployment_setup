@@ -16,25 +16,37 @@ const startApp = async (app, appPath, env = {}) => {
 
   // Intelligent fallback if no start command provided
   if (!startCommand || startCommand === 'npm start') {
-    if (fs.existsSync(path.join(appPath, 'package.json'))) {
-      const pkg = JSON.parse(fs.readFileSync(path.join(appPath, 'package.json'), 'utf8'));
+    const pkgPath = path.join(appPath, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
       
       if (pkg.scripts && pkg.scripts.start) {
         startCommand = 'npm start';
-      } else if (pkg.main) {
+      } else if (pkg.main && fs.existsSync(path.join(appPath, pkg.main))) {
         startCommand = `node ${pkg.main}`;
       } else if (fs.existsSync(path.join(appPath, 'index.js'))) {
         startCommand = 'node index.js';
       } else if (fs.existsSync(path.join(appPath, 'server.js'))) {
         startCommand = 'node server.js';
+      } else if (fs.existsSync(path.join(appPath, 'app.js'))) {
+        startCommand = 'node app.js';
       }
-    } else if (fs.existsSync(path.join(appPath, 'index.js'))) {
-      startCommand = 'node index.js';
+    } else {
+      // No package.json, look for common entry points
+      if (fs.existsSync(path.join(appPath, 'index.js'))) {
+        startCommand = 'node index.js';
+      } else if (fs.existsSync(path.join(appPath, 'server.js'))) {
+        startCommand = 'node server.js';
+      } else if (fs.existsSync(path.join(appPath, 'app.js'))) {
+        startCommand = 'node app.js';
+      }
     }
   }
 
-  // Final fallback
-  if (!startCommand) startCommand = 'node index.js';
+  // Final fallback if we still don't have a command or it's just 'node'
+  if (!startCommand || startCommand === 'node') {
+    startCommand = 'node index.js';
+  }
 
   console.log(`🚀 [${app.name}] Starting app with command: ${startCommand}`);
 
