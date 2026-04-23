@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { ExternalLink, Terminal, Power, RefreshCw, Cpu, Globe, Plus, Activity, GitBranch, Box, Loader2 } from 'lucide-react';
+import { ExternalLink, Terminal, Power, RefreshCw, Cpu, Globe, Plus, Activity, GitBranch, Box, Loader2, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const API_BASE = 'https://panel-api.justlavish.tech/api/admin';
@@ -125,6 +125,18 @@ function Dashboard() {
                 <Terminal size={16} />
                 Details
               </Link>
+              <button 
+                onClick={async () => {
+                  if (window.confirm(`Delete ${app.name}?`)) {
+                    await axios.delete(`${API_BASE}/app/${app._id}`);
+                    fetchApps();
+                  }
+                }}
+                className="btn btn-outline"
+                style={{ flex: '0 0 auto', color: 'var(--error)', borderColor: 'rgba(239, 68, 68, 0.2)' }}
+              >
+                <Trash2 size={16} />
+              </button>
             </div>
           </motion.div>
         ))}
