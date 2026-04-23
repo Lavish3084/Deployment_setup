@@ -22,7 +22,7 @@ router.post('/create-app', async (req, res) => {
   try {
     // Find next available port (starting from 3000, skipping panel ports)
     const lastApp = await App.findOne().sort({ port: -1 });
-    let port = lastApp ? lastApp.port + 1 : 3000;
+    let port = req.body.port ? parseInt(req.body.port) : (lastApp ? lastApp.port + 1 : 3000);
     
     // Reserved ports for the platform itself
     const reserved = [3005, 5001];

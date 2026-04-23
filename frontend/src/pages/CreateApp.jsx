@@ -16,6 +16,7 @@ function CreateApp() {
     branch: 'main',
     buildCommand: 'npm install',
     startCommand: 'npm start',
+    port: '',
     env: {}
   });
 
@@ -110,6 +111,23 @@ function CreateApp() {
                   onChange={(e) => setFormData({...formData, branch: e.target.value})}
                 />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label>Application Port (Optional)</label>
+              <div style={{ position: 'relative' }}>
+                <Terminal size={18} style={{ position: 'absolute', left: '1rem', top: '0.9rem', color: 'var(--text-secondary)' }} />
+                <input 
+                  type="number" 
+                  placeholder="3000 (Default)"
+                  style={{ paddingLeft: '3rem' }}
+                  value={formData.port}
+                  onChange={(e) => setFormData({...formData, port: e.target.value})}
+                />
+              </div>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.4rem' }}>
+                Specify if your app is hardcoded to a port (e.g., 5005).
+              </p>
             </div>
 
             <div className="form-group">
