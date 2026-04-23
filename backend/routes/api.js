@@ -20,9 +20,15 @@ router.post('/create-app', async (req, res) => {
   const { name, repoUrl, subdomain, branch, buildCommand, startCommand } = req.body;
   
   try {
-    // Find next available port (starting from 5001)
+    // Find next available port (starting from 3000, skipping panel ports)
     const lastApp = await App.findOne().sort({ port: -1 });
-    const port = lastApp ? lastApp.port + 1 : 5001;
+    let port = lastApp ? lastApp.port + 1 : 3000;
+    
+    // Reserved ports for the platform itself
+    const reserved = [3005, 5001];
+    while (reserved.includes(port)) {
+      port++;
+    }
 
     const newApp = new App({
       name,
