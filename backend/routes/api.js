@@ -127,8 +127,15 @@ router.post('/stop/:id', async (req, res) => {
 router.delete('/app/:id', async (req, res) => {
   try {
     const app = await App.findById(req.params.id);
-    await pm2Service.deleteApp(app.name);
-    await App.findByIdAndDelete(req.params.id);
+    if (app) {
+      // Try to stop/delete from PM2, but don't fail if it doesn't exist
+      try {
+        await pm2Service.deleteApp(app.name);
+      } catch (pm2Err) {
+        console.warn(`PM2 delete failed for ${app.name} (app likely not running):`, pm2Err.message);
+      }
+      await App.findByIdAndDelete(req.params.id);
+    }
     res.json({ message: 'App deleted' });
   } catch (err) {
     res.status(500).json({ error: err.message });
