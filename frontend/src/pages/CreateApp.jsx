@@ -117,12 +117,15 @@ function CreateApp() {
                 <Terminal size={18} style={{ position: 'absolute', left: '1rem', top: '0.9rem', color: 'var(--text-secondary)' }} />
                 <input 
                   type="text" 
-                  placeholder="npm install && npm run build"
+                  placeholder="npm install"
                   style={{ paddingLeft: '3rem' }}
                   value={formData.buildCommand}
                   onChange={(e) => setFormData({...formData, buildCommand: e.target.value})}
                 />
               </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                Typically <code>npm install</code> or <code>yarn install</code>.
+              </p>
             </div>
 
             <div className="form-group">
@@ -137,7 +140,32 @@ function CreateApp() {
                   onChange={(e) => setFormData({...formData, startCommand: e.target.value})}
                 />
               </div>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+                Examples: <code>npm start</code>, <code>node server.js</code>, or <code>python app.py</code>.
+              </p>
             </div>
+          </div>
+
+          <div style={{ marginTop: '1.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', alignSelf: 'center', marginRight: '0.5rem' }}>Presets:</span>
+            {['npm start', 'node index.js', 'node server.js', 'python3 app.py'].map(cmd => (
+              <button 
+                key={cmd}
+                type="button"
+                onClick={() => setFormData({...formData, startCommand: cmd})}
+                style={{ 
+                  fontSize: '0.7rem', 
+                  padding: '0.3rem 0.7rem', 
+                  borderRadius: '2rem', 
+                  background: 'rgba(255,255,255,0.05)', 
+                  border: '1px solid var(--border-color)',
+                  cursor: 'pointer',
+                  color: 'var(--text-primary)'
+                }}
+              >
+                {cmd}
+              </button>
+            ))}
           </div>
 
           <div style={{ marginTop: '2rem', padding: '1.5rem', background: 'rgba(99, 102, 241, 0.05)', borderRadius: '1rem', border: '1px solid rgba(99, 102, 241, 0.1)' }}>
